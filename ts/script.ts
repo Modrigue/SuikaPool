@@ -434,6 +434,229 @@ function update(): void {
 }
 
 /**
+ * Draws different facial expressions based on fruit type
+ * Each fruit category has a unique personality
+ */
+function drawFruitExpression(ctx: CanvasRenderingContext2D, radius: number, typeIndex: number): void {
+    const eyeX = radius * 0.35;
+    const eyeY = -radius * 0.2;
+    const eyeRadius = radius * 0.1;
+    const mouthY = radius * 0.1;
+    const mouthRadius = radius * 0.5;
+
+    switch (typeIndex) {
+        case 0: // Cherry - Small and cute
+            // Small round eyes
+            ctx.beginPath();
+            ctx.arc(-eyeX, eyeY, eyeRadius * 0.8, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(eyeX, eyeY, eyeRadius * 0.8, 0, 2 * Math.PI);
+            ctx.fill();
+            // Small "o" mouth
+            ctx.beginPath();
+            ctx.arc(0, mouthY, mouthRadius * 0.3, 0, 2 * Math.PI);
+            ctx.stroke();
+            break;
+
+        case 1: // Strawberry - Sweet and cheerful
+            // Normal eyes
+            ctx.beginPath();
+            ctx.arc(-eyeX, eyeY, eyeRadius, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(eyeX, eyeY, eyeRadius, 0, 2 * Math.PI);
+            ctx.fill();
+            // Big happy smile
+            ctx.beginPath();
+            ctx.arc(0, mouthY, mouthRadius, 0, Math.PI, false);
+            ctx.stroke();
+            break;
+
+        case 2: // Grape - Mischievous
+            // Slightly squinted eyes
+            ctx.beginPath();
+            ctx.arc(-eyeX, eyeY - 2, eyeRadius * 0.7, 0, Math.PI, true);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(eyeX, eyeY - 2, eyeRadius * 0.7, 0, Math.PI, true);
+            ctx.stroke();
+            // Mischievous smirk
+            ctx.beginPath();
+            ctx.arc(0, mouthY, mouthRadius * 0.4, 0.5, Math.PI - 0.5, false);
+            ctx.stroke();
+            break;
+
+        case 3: // Dekopon - Confident
+            // Sharp eyes
+            ctx.beginPath();
+            ctx.arc(-eyeX, eyeY, eyeRadius * 0.9, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(eyeX, eyeY, eyeRadius * 0.9, 0, 2 * Math.PI);
+            ctx.fill();
+            // Confident straight mouth
+            ctx.beginPath();
+            ctx.moveTo(-mouthRadius * 0.6, mouthY);
+            ctx.lineTo(mouthRadius * 0.6, mouthY);
+            ctx.stroke();
+            break;
+
+        case 4: // Persimmon - Wise
+            // Kind eyes with slight curve
+            ctx.beginPath();
+            ctx.arc(-eyeX, eyeY, eyeRadius * 1.1, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(eyeX, eyeY, eyeRadius * 1.1, 0, 2 * Math.PI);
+            ctx.fill();
+            // Prominent wise mustache
+            ctx.lineWidth = Math.max(2, radius * 0.08); // Thicker line for mustache
+            ctx.beginPath();
+            // Left side of mustache
+            ctx.moveTo(-mouthRadius * 0.6, mouthY - 2);
+            ctx.quadraticCurveTo(-mouthRadius * 0.3, mouthY - 8, -mouthRadius * 0.1, mouthY - 2);
+            // Right side of mustache
+            ctx.moveTo(mouthRadius * 0.1, mouthY - 2);
+            ctx.quadraticCurveTo(mouthRadius * 0.3, mouthY - 8, mouthRadius * 0.6, mouthY - 2);
+            ctx.stroke();
+            // Small mouth below mustache
+            ctx.lineWidth = Math.max(1, radius * 0.05); // Reset line width
+            ctx.beginPath();
+            ctx.arc(0, mouthY + 3, mouthRadius * 0.3, 0.2, Math.PI - 0.2, false);
+            ctx.stroke();
+            break;
+
+        case 5: // Apple - Classic happy
+            // Standard round eyes
+            ctx.beginPath();
+            ctx.arc(-eyeX, eyeY, eyeRadius, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(eyeX, eyeY, eyeRadius, 0, 2 * Math.PI);
+            ctx.fill();
+            // Classic happy smile
+            ctx.beginPath();
+            ctx.arc(0, mouthY, mouthRadius * 0.8, 0.3, Math.PI - 0.3, false);
+            ctx.stroke();
+            break;
+
+        case 6: // Pear - Goofy
+            // Winking eyes - left eye closed, right eye open
+            // Left eye (winking)
+            ctx.beginPath();
+            ctx.arc(-eyeX, eyeY - 2, eyeRadius * 0.7, 0, Math.PI, true);
+            ctx.stroke();
+            // Right eye (open)
+            ctx.beginPath();
+            ctx.arc(eyeX, eyeY, eyeRadius * 1.2, 0, 2 * Math.PI);
+            ctx.fill();
+            // Goofy wide grin without teeth
+            ctx.beginPath();
+            ctx.arc(0, mouthY, mouthRadius * 1.4, 0.05, Math.PI - 0.05, false);
+            ctx.stroke();
+            break;
+
+        case 7: // Peach - Blushing
+            // Shy eyes
+            ctx.beginPath();
+            ctx.arc(-eyeX, eyeY, eyeRadius * 0.9, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(eyeX, eyeY, eyeRadius * 0.9, 0, 2 * Math.PI);
+            ctx.fill();
+            // Shy "o" mouth
+            ctx.beginPath();
+            ctx.arc(0, mouthY, mouthRadius * 0.4, 0, 2 * Math.PI);
+            ctx.stroke();
+            break;
+
+        case 8: // Pineapple - Spiky personality
+            // Sharp eyes
+            ctx.beginPath();
+            ctx.arc(-eyeX, eyeY, eyeRadius * 0.8, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(eyeX, eyeY, eyeRadius * 0.8, 0, 2 * Math.PI);
+            ctx.fill();
+            // Spiky teeth grin
+            ctx.beginPath();
+            ctx.arc(0, mouthY, mouthRadius * 1.0, 0.2, Math.PI - 0.2, false);
+            ctx.stroke();
+            // Add some "teeth" spikes
+            ctx.beginPath();
+            ctx.moveTo(-mouthRadius * 0.3, mouthY);
+            ctx.lineTo(-mouthRadius * 0.2, mouthY - 3);
+            ctx.moveTo(0, mouthY);
+            ctx.lineTo(0, mouthY - 4);
+            ctx.moveTo(mouthRadius * 0.3, mouthY);
+            ctx.lineTo(mouthRadius * 0.2, mouthY - 3);
+            ctx.stroke();
+            break;
+
+        case 9: // Melon - Big and friendly
+            // Large friendly eyes
+            ctx.beginPath();
+            ctx.arc(-eyeX, eyeY, eyeRadius * 1.3, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(eyeX, eyeY, eyeRadius * 1.3, 0, 2 * Math.PI);
+            ctx.fill();
+            // Big friendly smile with dimples
+            ctx.beginPath();
+            ctx.arc(0, mouthY, mouthRadius * 1.2, 0.1, Math.PI - 0.1, false);
+            ctx.stroke();
+            // Dimples
+            ctx.beginPath();
+            ctx.arc(-mouthRadius * 0.8, mouthY - 2, 2, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(mouthRadius * 0.8, mouthY - 2, 2, 0, 2 * Math.PI);
+            ctx.fill();
+            break;
+
+        case 10: // Watermelon - King of fruits
+            // Regal eyes
+            ctx.beginPath();
+            ctx.arc(-eyeX, eyeY, eyeRadius * 1.1, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(eyeX, eyeY, eyeRadius * 1.1, 0, 2 * Math.PI);
+            ctx.fill();
+            // Big laugh expression with open mouth
+            ctx.beginPath();
+            ctx.arc(0, mouthY, mouthRadius * 1.5, 0, Math.PI, false);
+            ctx.stroke();
+            // Teeth showing in the laugh
+            ctx.beginPath();
+            ctx.moveTo(-mouthRadius * 0.4, mouthY);
+            ctx.lineTo(-mouthRadius * 0.3, mouthY - 4);
+            ctx.moveTo(-mouthRadius * 0.2, mouthY);
+            ctx.lineTo(-mouthRadius * 0.1, mouthY - 5);
+            ctx.moveTo(mouthRadius * 0.2, mouthY);
+            ctx.lineTo(mouthRadius * 0.1, mouthY - 5);
+            ctx.moveTo(mouthRadius * 0.4, mouthY);
+            ctx.lineTo(mouthRadius * 0.3, mouthY - 4);
+            ctx.stroke();
+            break;
+
+        default: // Fallback to original expression
+            // Standard eyes
+            ctx.beginPath();
+            ctx.arc(-eyeX, eyeY, eyeRadius, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(eyeX, eyeY, eyeRadius, 0, 2 * Math.PI);
+            ctx.fill();
+            // Standard smile
+            ctx.beginPath();
+            ctx.arc(0, mouthY, mouthRadius, 0, Math.PI, false);
+            ctx.stroke();
+            break;
+    }
+}
+
+/**
  * Renders the current game state
  * Draws all fruits, aiming line, next fruit, and UI elements
  */
@@ -468,23 +691,8 @@ function draw(): void {
         ctx.strokeStyle = 'black';
         ctx.lineWidth = Math.max(1, fruit.radius * 0.05);
 
-        // Draw eyes
-        const eyeX = fruit.radius * 0.35;
-        const eyeY = -fruit.radius * 0.2;
-        const eyeRadius = fruit.radius * 0.1;
-        ctx.beginPath();
-        ctx.arc(-eyeX, eyeY, eyeRadius, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(eyeX, eyeY, eyeRadius, 0, 2 * Math.PI);
-        ctx.fill();
-
-        // Draw smiling mouth
-        const mouthY = fruit.radius * 0.1;
-        const mouthRadius = fruit.radius * 0.5;
-        ctx.beginPath();
-        ctx.arc(0, mouthY, mouthRadius, 0, Math.PI, false);
-        ctx.stroke();
+        // Draw different expressions based on fruit type
+        drawFruitExpression(ctx, fruit.radius, fruit.typeIndex);
 
         ctx.restore();
     });
@@ -541,23 +749,8 @@ function draw(): void {
         ctx.strokeStyle = 'black';
         ctx.lineWidth = Math.max(1, fruitToLaunch.radius * 0.05);
 
-        // Draw eyes
-        const eyeX = fruitToLaunch.radius * 0.35;
-        const eyeY = -fruitToLaunch.radius * 0.2;
-        const eyeRadius = fruitToLaunch.radius * 0.1;
-        ctx.beginPath();
-        ctx.arc(-eyeX, eyeY, eyeRadius, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(eyeX, eyeY, eyeRadius, 0, 2 * Math.PI);
-        ctx.fill();
-
-        // Draw smiling mouth
-        const mouthY = fruitToLaunch.radius * 0.1;
-        const mouthRadius = fruitToLaunch.radius * 0.5;
-        ctx.beginPath();
-        ctx.arc(0, mouthY, mouthRadius, 0, Math.PI, false);
-        ctx.stroke();
+        // Draw expression for launch fruit
+        drawFruitExpression(ctx, fruitToLaunch.radius, fruitToLaunch.typeIndex);
 
         ctx.restore();
     }
@@ -595,23 +788,8 @@ function draw(): void {
         fruitCtx.strokeStyle = 'black';
         fruitCtx.lineWidth = Math.max(1, radius * 0.05);
 
-        // Draw eyes
-        const eyeX = radius * 0.35;
-        const eyeY = -radius * 0.2;
-        const eyeRadius = radius * 0.1;
-        fruitCtx.beginPath();
-        fruitCtx.arc(-eyeX, eyeY, eyeRadius, 0, 2 * Math.PI);
-        fruitCtx.fill();
-        fruitCtx.beginPath();
-        fruitCtx.arc(eyeX, eyeY, eyeRadius, 0, 2 * Math.PI);
-        fruitCtx.fill();
-
-        // Draw smiling mouth
-        const mouthY = radius * 0.1;
-        const mouthRadius = radius * 0.5;
-        fruitCtx.beginPath();
-        fruitCtx.arc(0, mouthY, mouthRadius, 0, Math.PI, false);
-        fruitCtx.stroke();
+        // Draw expression for UI fruit
+        drawFruitExpression(fruitCtx, radius, fruitInQueue.typeIndex);
 
         fruitCtx.restore();
 
