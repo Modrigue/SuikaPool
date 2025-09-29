@@ -237,12 +237,30 @@ function draw() {
     });
     // Draw aiming line
     if (fruitToLaunch) {
+        const dx = mousePos.x - fruitToLaunch.x;
+        const dy = mousePos.y - fruitToLaunch.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const maxLength = canvas.width * 0.25; // Quarter of the canvas width
+        let endX, endY;
+        if (distance > maxLength) {
+            // Limit the line length to quarter of the canvas width
+            const angle = Math.atan2(dy, dx);
+            endX = fruitToLaunch.x + Math.cos(angle) * maxLength;
+            endY = fruitToLaunch.y + Math.sin(angle) * maxLength;
+        }
+        else {
+            endX = mousePos.x;
+            endY = mousePos.y;
+        }
         ctx.beginPath();
         ctx.moveTo(fruitToLaunch.x, fruitToLaunch.y);
-        ctx.lineTo(mousePos.x, mousePos.y);
+        ctx.lineTo(endX, endY);
         ctx.strokeStyle = '#999';
+        ctx.lineWidth = 3; // Thicker line
+        ctx.setLineDash([10, 5]); // Dotted line pattern: 10px dash, 5px gap
         ctx.stroke();
         ctx.closePath();
+        ctx.setLineDash([]); // Reset line dash for other drawings
     }
     // Draw next fruit (cue ball)
     if (fruitToLaunch) {
