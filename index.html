@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poool Game</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Poool Game</h1>
+    <div id="game-container">
+        <canvas id="game-canvas" width="800" height="600"></canvas>
+        <div id="ui-container">
+            <div>
+                <h2>Score</h2>
+                <p id="score">0</p>
+            </div>
+            <div>
+                <h2>Next Fruit</h2>
+                <div id="next-fruit-container"></div>
+                <p id="next-fruit-name"></p>
+            </div>
+        </div>
+    </div>
+    <div id="game-over-screen" style="display: none;">
+        <h2>Game Over</h2>
+        <p>Your final score is <span id="final-score">0</span></p>
+        <button id="restart-button">Restart</button>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
