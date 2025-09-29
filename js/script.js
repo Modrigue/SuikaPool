@@ -5,6 +5,8 @@ const scoreEl = document.getElementById('score');
 const finalScoreEl = document.getElementById('final-score');
 const gameOverScreen = document.getElementById('game-over-screen');
 const restartButton = document.getElementById('restart-button');
+const fillGaugeCanvas = document.getElementById('fill-gauge');
+const fillPercentageEl = document.getElementById('fill-percentage');
 // Game variables
 let score = 0;
 let gameOver = false;
@@ -76,6 +78,51 @@ function isOverlapping(x, y, radius) {
 function generateRandomFruit() {
     const typeIndex = Math.floor(Math.random() * 5);
     return Object.assign(Object.assign({}, fruitTypes[typeIndex]), { typeIndex: typeIndex });
+}
+function calculateFillPercentage() {
+    const totalCanvasArea = canvas.width * canvas.height;
+    let occupiedArea = 0;
+    fruits.forEach((fruit) => {
+        // Calculate the area occupied by each fruit (circle area)
+        occupiedArea += Math.PI * fruit.radius * fruit.radius;
+    });
+    // Return percentage, capped at 100%
+    return Math.min((occupiedArea / totalCanvasArea) * 100, 100);
+}
+function drawFillGauge() {
+    const gaugeCtx = fillGaugeCanvas.getContext('2d');
+    const gaugeWidth = fillGaugeCanvas.width;
+    const gaugeHeight = fillGaugeCanvas.height;
+    const fillPercentage = calculateFillPercentage();
+    // Clear the canvas
+    gaugeCtx.clearRect(0, 0, gaugeWidth, gaugeHeight);
+    // Draw gauge background
+    gaugeCtx.fillStyle = '#e0e0e0';
+    gaugeCtx.fillRect(0, 0, gaugeWidth, gaugeHeight);
+    // Draw fill level (from bottom up)
+    const fillHeight = (fillPercentage / 100) * gaugeHeight;
+    const gradient = gaugeCtx.createLinearGradient(0, gaugeHeight - fillHeight, 0, gaugeHeight);
+    // Color changes based on fill level
+    if (fillPercentage < 30) {
+        gradient.addColorStop(0, '#4caf50'); // Green for low fill
+        gradient.addColorStop(1, '#66bb6a');
+    }
+    else if (fillPercentage < 70) {
+        gradient.addColorStop(0, '#ff9800'); // Orange for medium fill
+        gradient.addColorStop(1, '#ffb74d');
+    }
+    else {
+        gradient.addColorStop(0, '#f44336'); // Red for high fill
+        gradient.addColorStop(1, '#ef5350');
+    }
+    gaugeCtx.fillStyle = gradient;
+    gaugeCtx.fillRect(0, gaugeHeight - fillHeight, gaugeWidth, fillHeight);
+    // Draw gauge border
+    gaugeCtx.strokeStyle = '#333';
+    gaugeCtx.lineWidth = 2;
+    gaugeCtx.strokeRect(0, 0, gaugeWidth, gaugeHeight);
+    // Update percentage text
+    fillPercentageEl.textContent = `${Math.round(fillPercentage)}%`;
 }
 function prepareNextFruit() {
     const newFruitType = fruitInQueue;
@@ -348,6 +395,8 @@ function draw() {
     else {
         nextFruitName.textContent = '';
     }
+    // Update fill gauge
+    drawFillGauge();
 }
 restartButton.addEventListener('click', init);
 init();

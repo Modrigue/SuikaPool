@@ -31,6 +31,8 @@ const scoreEl = document.getElementById('score') as HTMLElement;
 const finalScoreEl = document.getElementById('final-score') as HTMLElement;
 const gameOverScreen = document.getElementById('game-over-screen') as HTMLElement;
 const restartButton = document.getElementById('restart-button') as HTMLElement;
+const fillGaugeCanvas = document.getElementById('fill-gauge') as HTMLCanvasElement;
+const fillPercentageEl = document.getElementById('fill-percentage') as HTMLElement;
 
 // Game variables
 let score: number = 0;
@@ -111,6 +113,60 @@ function isOverlapping(x: number, y: number, radius: number): boolean {
 function generateRandomFruit(): QueuedFruit {
     const typeIndex = Math.floor(Math.random() * 5);
     return { ...fruitTypes[typeIndex], typeIndex: typeIndex };
+}
+
+function calculateFillPercentage(): number {
+    const totalCanvasArea = canvas.width * canvas.height;
+    let occupiedArea = 0;
+
+    fruits.forEach((fruit: GameFruit) => {
+        // Calculate the area occupied by each fruit (circle area)
+        occupiedArea += Math.PI * fruit.radius * fruit.radius;
+    });
+
+    // Return percentage, capped at 100%
+    return Math.min((occupiedArea / totalCanvasArea) * 100, 100);
+}
+
+function drawFillGauge(): void {
+    const gaugeCtx = fillGaugeCanvas.getContext('2d') as CanvasRenderingContext2D;
+    const gaugeWidth = fillGaugeCanvas.width;
+    const gaugeHeight = fillGaugeCanvas.height;
+    const fillPercentage = calculateFillPercentage();
+
+    // Clear the canvas
+    gaugeCtx.clearRect(0, 0, gaugeWidth, gaugeHeight);
+
+    // Draw gauge background
+    gaugeCtx.fillStyle = '#e0e0e0';
+    gaugeCtx.fillRect(0, 0, gaugeWidth, gaugeHeight);
+
+    // Draw fill level (from bottom up)
+    const fillHeight = (fillPercentage / 100) * gaugeHeight;
+    const gradient = gaugeCtx.createLinearGradient(0, gaugeHeight - fillHeight, 0, gaugeHeight);
+
+    // Color changes based on fill level
+    if (fillPercentage < 30) {
+        gradient.addColorStop(0, '#4caf50'); // Green for low fill
+        gradient.addColorStop(1, '#66bb6a');
+    } else if (fillPercentage < 70) {
+        gradient.addColorStop(0, '#ff9800'); // Orange for medium fill
+        gradient.addColorStop(1, '#ffb74d');
+    } else {
+        gradient.addColorStop(0, '#f44336'); // Red for high fill
+        gradient.addColorStop(1, '#ef5350');
+    }
+
+    gaugeCtx.fillStyle = gradient;
+    gaugeCtx.fillRect(0, gaugeHeight - fillHeight, gaugeWidth, fillHeight);
+
+    // Draw gauge border
+    gaugeCtx.strokeStyle = '#333';
+    gaugeCtx.lineWidth = 2;
+    gaugeCtx.strokeRect(0, 0, gaugeWidth, gaugeHeight);
+
+    // Update percentage text
+    fillPercentageEl.textContent = `${Math.round(fillPercentage)}%`;
 }
 
 function prepareNextFruit(): void {
@@ -438,6 +494,9 @@ function draw(): void {
     } else {
         nextFruitName.textContent = '';
     }
+
+    // Update fill gauge
+    drawFillGauge();
 }
 
 restartButton.addEventListener('click', init);

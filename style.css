@@ -18,6 +18,26 @@ body {
 
 #ui-container {
     margin-left: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#ui-container>div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+#ui-container h2 {
+    margin: 0 0 10px 0;
+    font-size: 16px;
+}
+
+#ui-container p {
+    margin: 5px 0;
 }
 
 #next-fruit-container {
@@ -31,7 +51,19 @@ body {
 
 #next-fruit-name {
     text-align: center;
+}
+
+#fill-gauge {
+    border: 1px solid #ccc;
+    background-color: #f8f8f8;
+    display: block;
+    margin: 0 auto;
+}
+
+#fill-percentage {
+    text-align: center;
     font-weight: bold;
+    margin-top: 5px;
 }
 
 #game-over-screen {
