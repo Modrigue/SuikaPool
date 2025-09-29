@@ -1,18 +1,28 @@
 "use strict";
+// Get main game canvas and its 2D rendering context
 const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
+// Get UI elements for score display and game over screen
 const scoreEl = document.getElementById('score');
 const finalScoreEl = document.getElementById('final-score');
 const gameOverScreen = document.getElementById('game-over-screen');
 const restartButton = document.getElementById('restart-button');
+// Get fill gauge elements
 const fillGaugeCanvas = document.getElementById('fill-gauge');
 const fillPercentageEl = document.getElementById('fill-percentage');
-// Game variables
-let score = 0;
-let gameOver = false;
-let fruits = [];
-let fruitToLaunch;
-let fruitInQueue;
+/**
+ * Core game state variables
+ */
+let score = 0; // Current player score
+let gameOver = false; // Game over flag
+let fruits = []; // Array of all fruits in the game
+let fruitToLaunch; // Fruit ready to be launched (null when none)
+let fruitInQueue; // Next fruit waiting in queue
+/**
+ * Array of all available fruit types
+ * Ordered by rank (0 = smallest, 10 = largest)
+ * Only the first 5 types (ranks 0-4) are randomly generated
+ */
 const fruitTypes = [
     { rank: 0, radius: 15, color: '#8A2BE2', name: 'Cherry', score: 1 },
     { rank: 1, radius: 20, color: '#B11D97', name: 'Strawberry', score: 2 },
@@ -26,7 +36,12 @@ const fruitTypes = [
     { rank: 9, radius: 100, color: '#59A819', name: 'Melon', score: 10 },
     { rank: 10, radius: 120, color: '#228B22', name: 'Watermelon', score: 11 }
 ];
+// Current mouse position on the canvas
 let mousePos = { x: 0, y: 0 };
+/**
+ * Converts mouse event coordinates to canvas coordinates
+ * Accounts for canvas position and scroll offset
+ */
 function getMousePos(canvas, evt) {
     const rect = canvas.getBoundingClientRect();
     return {
@@ -34,25 +49,35 @@ function getMousePos(canvas, evt) {
         y: evt.clientY - rect.top
     };
 }
+// Track mouse movement for aiming line display
 canvas.addEventListener('mousemove', (evt) => {
     mousePos = getMousePos(canvas, evt);
 });
+// Handle fruit launching when mouse is clicked
 canvas.addEventListener('mousedown', () => {
     if (fruitToLaunch) {
+        // Calculate launch direction and speed
         const dx = mousePos.x - fruitToLaunch.x;
         const dy = mousePos.y - fruitToLaunch.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
         const speed = Math.min(distance * 0.1, 30); // Proportional to distance, max speed of 30
         const angle = Math.atan2(dy, dx);
+        // Set initial velocity
         fruitToLaunch.vx = Math.cos(angle) * speed;
         fruitToLaunch.vy = Math.sin(angle) * speed;
+        // Add to game world and clear launch fruit
         fruits.push(fruitToLaunch);
         fruitToLaunch = null; // Prevent launching another fruit
+        // Prepare next fruit after a delay
         setTimeout(() => {
             prepareNextFruit();
         }, 1000);
     }
 });
+/**
+ * Initializes the game state and starts the game loop
+ * Called when starting a new game or restarting
+ */
 function init() {
     score = 0;
     gameOver = false;
@@ -63,6 +88,10 @@ function init() {
     prepareNextFruit();
     gameLoop();
 }
+/**
+ * Checks if a fruit at the given position would overlap with existing fruits
+ * Used for spawning new fruits in non-overlapping positions
+ */
 function isOverlapping(x, y, radius) {
     for (let i = 0; i < fruits.length; i++) {
         const fruit = fruits[i];
@@ -75,10 +104,18 @@ function isOverlapping(x, y, radius) {
     }
     return false;
 }
+/**
+ * Generates a random fruit from the first 5 types (ranks 0-4)
+ * These are the only fruits that can be spawned initially
+ */
 function generateRandomFruit() {
     const typeIndex = Math.floor(Math.random() * 5);
     return Object.assign(Object.assign({}, fruitTypes[typeIndex]), { typeIndex: typeIndex });
 }
+/**
+ * Calculates the percentage of canvas area occupied by fruits
+ * Used for the fill gauge and game over condition
+ */
 function calculateFillPercentage() {
     const totalCanvasArea = canvas.width * canvas.height;
     let occupiedArea = 0;
@@ -89,6 +126,10 @@ function calculateFillPercentage() {
     // Return percentage, capped at 100%
     return Math.min((occupiedArea / totalCanvasArea) * 100, 100);
 }
+/**
+ * Draws the vertical fill percentage gauge
+ * Includes color interpolation, threshold line, and game over detection
+ */
 function drawFillGauge() {
     const gaugeCtx = fillGaugeCanvas.getContext('2d');
     const gaugeWidth = fillGaugeCanvas.width;
@@ -99,7 +140,7 @@ function drawFillGauge() {
     // Draw gauge background
     gaugeCtx.fillStyle = '#e0e0e0';
     gaugeCtx.fillRect(0, 0, gaugeWidth, gaugeHeight);
-    // Draw 90% threshold line
+    // Draw 90% threshold line (game over line)
     const thresholdY = gaugeHeight * 0.1; // 90% from bottom = 10% from top
     gaugeCtx.strokeStyle = '#000';
     gaugeCtx.lineWidth = 2;
@@ -111,7 +152,7 @@ function drawFillGauge() {
     gaugeCtx.setLineDash([]); // Reset line dash
     // Draw fill level (from bottom up)
     const fillHeight = (fillPercentage / 100) * gaugeHeight;
-    // Interpolate colors: dark green (0%) -> yellow (50%) -> red (100%)
+    // Color interpolation: dark green (0%) -> yellow (50%) -> red (100%)
     let color;
     if (fillPercentage <= 50) {
         // Interpolate from dark green to yellow (0% to 50%)
@@ -135,9 +176,9 @@ function drawFillGauge() {
     gaugeCtx.strokeStyle = '#333';
     gaugeCtx.lineWidth = 2;
     gaugeCtx.strokeRect(0, 0, gaugeWidth, gaugeHeight);
-    // Update percentage text
+    // Update percentage text display
     fillPercentageEl.textContent = `${Math.round(fillPercentage)}%`;
-    // Check for game over condition
+    // Check for game over condition (90% fill threshold)
     if (fillPercentage >= 90 && !gameOver) {
         gameOver = true;
         finalScoreEl.textContent = score.toString();
