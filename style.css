@@ -43,7 +43,7 @@ body {
 #next-fruit-container {
     width: 100px;
     height: 100px;
-    border: 1px solid #ccc;
+    border: 1px solid transparent;
     display: flex;
     align-items: center;
     justify-content: center;

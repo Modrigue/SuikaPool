@@ -99,23 +99,37 @@ function drawFillGauge() {
     // Draw gauge background
     gaugeCtx.fillStyle = '#e0e0e0';
     gaugeCtx.fillRect(0, 0, gaugeWidth, gaugeHeight);
+    // Draw 90% threshold line
+    const thresholdY = gaugeHeight * 0.1; // 90% from bottom = 10% from top
+    gaugeCtx.strokeStyle = '#000';
+    gaugeCtx.lineWidth = 2;
+    gaugeCtx.setLineDash([5, 5]); // Dashed line
+    gaugeCtx.beginPath();
+    gaugeCtx.moveTo(0, thresholdY);
+    gaugeCtx.lineTo(gaugeWidth, thresholdY);
+    gaugeCtx.stroke();
+    gaugeCtx.setLineDash([]); // Reset line dash
     // Draw fill level (from bottom up)
     const fillHeight = (fillPercentage / 100) * gaugeHeight;
-    const gradient = gaugeCtx.createLinearGradient(0, gaugeHeight - fillHeight, 0, gaugeHeight);
-    // Color changes based on fill level
-    if (fillPercentage < 30) {
-        gradient.addColorStop(0, '#4caf50'); // Green for low fill
-        gradient.addColorStop(1, '#66bb6a');
-    }
-    else if (fillPercentage < 70) {
-        gradient.addColorStop(0, '#ff9800'); // Orange for medium fill
-        gradient.addColorStop(1, '#ffb74d');
+    // Interpolate colors: dark green (0%) -> yellow (50%) -> red (100%)
+    let color;
+    if (fillPercentage <= 50) {
+        // Interpolate from dark green to yellow (0% to 50%)
+        const ratio = fillPercentage / 50;
+        const r = Math.round(255 * ratio); // 0 to 255
+        const g = Math.round(128 + 127 * ratio); // 128 to 255 (dark green to bright green)
+        const b = 0; // Always 0
+        color = `rgb(${r}, ${g}, ${b})`;
     }
     else {
-        gradient.addColorStop(0, '#f44336'); // Red for high fill
-        gradient.addColorStop(1, '#ef5350');
+        // Interpolate from yellow to red (50% to 100%)
+        const ratio = (fillPercentage - 50) / 50;
+        const r = 255; // Always 255
+        const g = Math.round(255 * (1 - ratio)); // 255 to 0
+        const b = 0; // Always 0
+        color = `rgb(${r}, ${g}, ${b})`;
     }
-    gaugeCtx.fillStyle = gradient;
+    gaugeCtx.fillStyle = color;
     gaugeCtx.fillRect(0, gaugeHeight - fillHeight, gaugeWidth, fillHeight);
     // Draw gauge border
     gaugeCtx.strokeStyle = '#333';
@@ -123,6 +137,12 @@ function drawFillGauge() {
     gaugeCtx.strokeRect(0, 0, gaugeWidth, gaugeHeight);
     // Update percentage text
     fillPercentageEl.textContent = `${Math.round(fillPercentage)}%`;
+    // Check for game over condition
+    if (fillPercentage >= 90 && !gameOver) {
+        gameOver = true;
+        finalScoreEl.textContent = score.toString();
+        gameOverScreen.style.display = 'block';
+    }
 }
 function prepareNextFruit() {
     const newFruitType = fruitInQueue;
