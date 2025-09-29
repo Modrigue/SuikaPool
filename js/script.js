@@ -185,22 +185,28 @@ function drawFillGauge() {
         gameOverScreen.style.display = 'block';
     }
 }
+/**
+ * Prepares the next fruit to be launched
+ * Places it at the bottom of the canvas, finding a non-overlapping position
+ */
 function prepareNextFruit() {
+    // Get the next fruit from queue and generate a new one for the queue
     const newFruitType = fruitInQueue;
     fruitInQueue = generateRandomFruit();
     const radius = newFruitType.radius;
-    const y = canvas.height - 50;
-    let x = canvas.width / 2;
+    const y = canvas.height - 50; // Position near bottom of canvas
+    let x = canvas.width / 2; // Start at center
+    // Find a non-overlapping position if center is occupied
     if (isOverlapping(x, y, radius)) {
         let searchOffset = 5; // Start searching 5px away
         while (true) {
-            // Check right
+            // Check right side
             let rightX = x + searchOffset;
             if (rightX + radius < canvas.width && !isOverlapping(rightX, y, radius)) {
                 x = rightX;
                 break;
             }
-            // Check left
+            // Check left side
             let leftX = x - searchOffset;
             if (leftX - radius > 0 && !isOverlapping(leftX, y, radius)) {
                 x = leftX;
@@ -213,28 +219,41 @@ function prepareNextFruit() {
             }
         }
     }
+    // Create the fruit to be launched with calculated position
     fruitToLaunch = Object.assign(Object.assign({}, newFruitType), { x,
-        y, vx: 0, vy: 0, angle: 0 });
+        y, vx: 0, vy: 0, angle: 0 // No initial rotation
+     });
 }
+/**
+ * Main game loop - runs continuously while game is active
+ * Updates game state and renders the frame
+ */
 function gameLoop() {
     if (gameOver)
-        return;
-    update();
-    draw();
-    requestAnimationFrame(gameLoop);
+        return; // Stop loop when game is over
+    update(); // Update physics and game logic
+    draw(); // Render the current frame
+    requestAnimationFrame(gameLoop); // Schedule next frame
 }
+/**
+ * Updates all game objects and physics
+ * Handles movement, collisions, merging, and wall bounces
+ */
 function update() {
+    // Update physics for all fruits
     fruits.forEach((fruit) => {
-        // Apply friction
+        // Apply friction to gradually slow down fruits
         fruit.vx *= 0.98;
         fruit.vy *= 0.98;
+        // Update position based on velocity
         fruit.x += fruit.vx;
         fruit.y += fruit.vy;
-        fruit.angle += fruit.vx * 0.05; // Rotate based on horizontal velocity
-        // Wall collisions (all 4 walls)
+        // Rotate fruit based on horizontal velocity for visual effect
+        fruit.angle += fruit.vx * 0.05;
+        // Handle wall collisions (all 4 walls)
         if (fruit.x - fruit.radius < 0) {
             fruit.x = fruit.radius;
-            fruit.vx *= -0.7;
+            fruit.vx *= -0.7; // Bounce with energy loss
         }
         else if (fruit.x + fruit.radius > canvas.width) {
             fruit.x = canvas.width - fruit.radius;
@@ -249,7 +268,7 @@ function update() {
             fruit.vy *= -0.7;
         }
     });
-    // Fruit collisions
+    // Handle fruit-to-fruit collisions and merging
     for (let i = 0; i < fruits.length; i++) {
         for (let j = i + 1; j < fruits.length; j++) {
             const f1 = fruits[i];
@@ -258,74 +277,91 @@ function update() {
             const dy = f2.y - f1.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
             const minDistance = f1.radius + f2.radius;
+            // Check if fruits are colliding
             if (distance < minDistance) {
-                // Collision response
+                // Separate overlapping fruits
                 const angle = Math.atan2(dy, dx);
                 const overlap = minDistance - distance;
                 const tx = Math.cos(angle) * overlap;
                 const ty = Math.sin(angle) * overlap;
+                // Move fruits apart by half the overlap distance each
                 f1.x -= tx / 2;
                 f1.y -= ty / 2;
                 f2.x += tx / 2;
                 f2.y += ty / 2;
-                // Elastic collision
+                // Apply elastic collision physics
                 const v1 = { x: f1.vx, y: f1.vy };
                 const v2 = { x: f2.vx, y: f2.vy };
+                // Use radius as mass for collision calculation
                 const m1 = f1.radius;
                 const m2 = f2.radius;
+                // Calculate new velocities using elastic collision formula
                 const v1_new_x = (v1.x * (m1 - m2) + 2 * m2 * v2.x) / (m1 + m2);
                 const v1_new_y = (v1.y * (m1 - m2) + 2 * m2 * v2.y) / (m1 + m2);
                 const v2_new_x = (v2.x * (m2 - m1) + 2 * m1 * v1.x) / (m1 + m2);
                 const v2_new_y = (v2.y * (m2 - m1) + 2 * m1 * v1.y) / (m1 + m2);
+                // Apply new velocities with slight energy loss
                 f1.vx = v1_new_x * 0.95;
                 f1.vy = v1_new_y * 0.95;
                 f2.vx = v2_new_x * 0.95;
                 f2.vy = v2_new_y * 0.95;
-                // Merging
+                // Check for fruit merging (same type and not the largest fruit)
                 if (f1.typeIndex === f2.typeIndex && f1.typeIndex < fruitTypes.length - 1) {
                     const newTypeIndex = f1.typeIndex + 1;
                     const newFruitType = fruitTypes[newTypeIndex];
-                    // Conserve momentum for the new fruit's velocity
+                    // Calculate merged fruit velocity using momentum conservation
                     const m1 = f1.radius;
                     const m2 = f2.radius;
                     const newMass = newFruitType.radius;
                     const newVx = ((m1 * f1.vx + m2 * f2.vx) / newMass) * 0.5;
                     const newVy = ((m1 * f1.vy + m2 * f2.vy) / newMass) * 0.5;
+                    // Create the new merged fruit
                     const newFruit = Object.assign(Object.assign({}, newFruitType), { x: (f1.x + f2.x) / 2, y: (f1.y + f2.y) / 2, vx: newVx, vy: newVy, typeIndex: newTypeIndex, angle: 0 });
-                    fruits.splice(j, 1);
-                    fruits.splice(i, 1);
+                    // Remove old fruits and add new one
+                    fruits.splice(j, 1); // Remove second fruit first (higher index)
+                    fruits.splice(i, 1); // Then remove first fruit
                     fruits.push(newFruit);
+                    // Update score
                     score += fruitTypes[newTypeIndex].score;
                     scoreEl.textContent = score.toString();
-                    break;
+                    break; // Exit collision loop since fruits were modified
                 }
             }
         }
     }
 }
+/**
+ * Renders the current game state
+ * Draws all fruits, aiming line, next fruit, and UI elements
+ */
 function draw() {
+    // Clear the canvas for the new frame
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    // Draw fruits
+    // Draw all shadows first (behind everything)
     fruits.forEach((fruit) => {
-        // Draw shadow
+        // Draw shadow for depth effect
         ctx.beginPath();
         ctx.arc(fruit.x + 7, fruit.y + 7, fruit.radius, 0, Math.PI * 2);
         ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
         ctx.fill();
         ctx.closePath();
+    });
+    // Draw all fruit bodies and faces
+    fruits.forEach((fruit) => {
+        // Draw main fruit body
         ctx.beginPath();
         ctx.arc(fruit.x, fruit.y, fruit.radius, 0, Math.PI * 2);
         ctx.fillStyle = fruit.color;
         ctx.fill();
         ctx.closePath();
-        // Draw Face
+        // Draw fruit face with rotation
         ctx.save();
         ctx.translate(fruit.x, fruit.y);
         ctx.rotate(fruit.angle);
         ctx.fillStyle = 'black';
         ctx.strokeStyle = 'black';
         ctx.lineWidth = Math.max(1, fruit.radius * 0.05);
-        // Eyes
+        // Draw eyes
         const eyeX = fruit.radius * 0.35;
         const eyeY = -fruit.radius * 0.2;
         const eyeRadius = fruit.radius * 0.1;
@@ -335,15 +371,15 @@ function draw() {
         ctx.beginPath();
         ctx.arc(eyeX, eyeY, eyeRadius, 0, 2 * Math.PI);
         ctx.fill();
-        // Mouth
+        // Draw smiling mouth
         const mouthY = fruit.radius * 0.1;
         const mouthRadius = fruit.radius * 0.5;
         ctx.beginPath();
-        ctx.arc(0, mouthY, mouthRadius, 0, Math.PI, false); // Smiling mouth
+        ctx.arc(0, mouthY, mouthRadius, 0, Math.PI, false);
         ctx.stroke();
         ctx.restore();
     });
-    // Draw aiming line
+    // Draw aiming line (dotted line showing launch direction)
     if (fruitToLaunch) {
         const dx = mousePos.x - fruitToLaunch.x;
         const dy = mousePos.y - fruitToLaunch.y;
@@ -370,7 +406,7 @@ function draw() {
         ctx.closePath();
         ctx.setLineDash([]); // Reset line dash for other drawings
     }
-    // Draw next fruit (cue ball)
+    // Draw the fruit ready to be launched (at bottom of canvas)
     if (fruitToLaunch) {
         // Draw shadow
         ctx.beginPath();
@@ -378,18 +414,19 @@ function draw() {
         ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
         ctx.fill();
         ctx.closePath();
+        // Draw main fruit body
         ctx.beginPath();
         ctx.arc(fruitToLaunch.x, fruitToLaunch.y, fruitToLaunch.radius, 0, Math.PI * 2);
         ctx.fillStyle = fruitToLaunch.color;
         ctx.fill();
         ctx.closePath();
-        // Draw Face
+        // Draw fruit face (no rotation for launch fruit)
         ctx.save();
         ctx.translate(fruitToLaunch.x, fruitToLaunch.y);
         ctx.fillStyle = 'black';
         ctx.strokeStyle = 'black';
         ctx.lineWidth = Math.max(1, fruitToLaunch.radius * 0.05);
-        // Eyes
+        // Draw eyes
         const eyeX = fruitToLaunch.radius * 0.35;
         const eyeY = -fruitToLaunch.radius * 0.2;
         const eyeRadius = fruitToLaunch.radius * 0.1;
@@ -399,41 +436,43 @@ function draw() {
         ctx.beginPath();
         ctx.arc(eyeX, eyeY, eyeRadius, 0, 2 * Math.PI);
         ctx.fill();
-        // Mouth
+        // Draw smiling mouth
         const mouthY = fruitToLaunch.radius * 0.1;
         const mouthRadius = fruitToLaunch.radius * 0.5;
         ctx.beginPath();
-        ctx.arc(0, mouthY, mouthRadius, 0, Math.PI, false); // Smiling mouth
+        ctx.arc(0, mouthY, mouthRadius, 0, Math.PI, false);
         ctx.stroke();
         ctx.restore();
     }
-    // Draw next fruit in UI
+    // Draw next fruit preview in UI panel
     const nextFruitContainer = document.getElementById('next-fruit-container');
     const nextFruitName = document.getElementById('next-fruit-name');
-    nextFruitContainer.innerHTML = '';
+    nextFruitContainer.innerHTML = ''; // Clear previous fruit
     if (fruitInQueue) {
+        // Create a small canvas for the fruit preview
         const fruitCanvas = document.createElement('canvas');
         const fruitCtx = fruitCanvas.getContext('2d');
-        const dpr = window.devicePixelRatio || 1;
+        const dpr = window.devicePixelRatio || 1; // High DPI support
         const radius = fruitInQueue.radius;
+        // Set canvas size with high DPI scaling
         fruitCanvas.width = radius * 2 * dpr;
         fruitCanvas.height = radius * 2 * dpr;
         fruitCanvas.style.width = radius * 2 + 'px';
         fruitCanvas.style.height = radius * 2 + 'px';
         fruitCtx.scale(dpr, dpr);
-        // Draw fruit
+        // Draw fruit body
         fruitCtx.beginPath();
         fruitCtx.arc(radius, radius, radius, 0, Math.PI * 2);
         fruitCtx.fillStyle = fruitInQueue.color;
         fruitCtx.fill();
         fruitCtx.closePath();
-        // Draw Face
+        // Draw fruit face
         fruitCtx.save();
         fruitCtx.translate(radius, radius);
         fruitCtx.fillStyle = 'black';
         fruitCtx.strokeStyle = 'black';
         fruitCtx.lineWidth = Math.max(1, radius * 0.05);
-        // Eyes
+        // Draw eyes
         const eyeX = radius * 0.35;
         const eyeY = -radius * 0.2;
         const eyeRadius = radius * 0.1;
@@ -443,21 +482,24 @@ function draw() {
         fruitCtx.beginPath();
         fruitCtx.arc(eyeX, eyeY, eyeRadius, 0, 2 * Math.PI);
         fruitCtx.fill();
-        // Mouth
+        // Draw smiling mouth
         const mouthY = radius * 0.1;
         const mouthRadius = radius * 0.5;
         fruitCtx.beginPath();
-        fruitCtx.arc(0, mouthY, mouthRadius, 0, Math.PI, false); // Smiling mouth
+        fruitCtx.arc(0, mouthY, mouthRadius, 0, Math.PI, false);
         fruitCtx.stroke();
         fruitCtx.restore();
+        // Add to UI and update name
         nextFruitContainer.appendChild(fruitCanvas);
         nextFruitName.textContent = fruitInQueue.name;
     }
     else {
         nextFruitName.textContent = '';
     }
-    // Update fill gauge
+    // Update and draw the fill percentage gauge
     drawFillGauge();
 }
+// Set up restart button event listener
 restartButton.addEventListener('click', init);
+// Initialize and start the game
 init();
