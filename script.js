@@ -10,7 +10,8 @@ const restartButton = document.getElementById('restart-button');
 let score = 0;
 let gameOver = false;
 let fruits = [];
-let nextFruit;
+let fruitToLaunch;
+let fruitInQueue;
 
 const fruitTypes = [
     { rank: 0, radius: 15, color: '#8A2BE2', name: 'Cherry', score: 1 },
@@ -41,18 +42,18 @@ canvas.addEventListener('mousemove', (evt) => {
 });
 
 canvas.addEventListener('mousedown', () => {
-    if (nextFruit) {
-        const dx = mousePos.x - nextFruit.x;
-        const dy = mousePos.y - nextFruit.y;
+    if (fruitToLaunch) {
+        const dx = mousePos.x - fruitToLaunch.x;
+        const dy = mousePos.y - fruitToLaunch.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
         const speed = Math.min(distance * 0.1, 30); // Proportional to distance, max speed of 30
         const angle = Math.atan2(dy, dx);
-        nextFruit.vx = Math.cos(angle) * speed;
-        nextFruit.vy = Math.sin(angle) * speed;
-        fruits.push(nextFruit);
-        nextFruit = null; // Prevent launching another fruit
+        fruitToLaunch.vx = Math.cos(angle) * speed;
+        fruitToLaunch.vy = Math.sin(angle) * speed;
+        fruits.push(fruitToLaunch);
+        fruitToLaunch = null; // Prevent launching another fruit
         setTimeout(() => {
-            spawnNextFruit();
+            prepareNextFruit();
         }, 1000);
     }
 });
@@ -63,13 +64,65 @@ function init() {
     fruits = [];
     scoreEl.textContent = score;
     gameOverScreen.style.display = 'none';
-    spawnNextFruit();
+    fruitInQueue = generateRandomFruit();
+    prepareNextFruit();
     gameLoop();
 }
 
-function spawnNextFruit() {
+function isOverlapping(x, y, radius) {
+    for (let i = 0; i < fruits.length; i++) {
+        const fruit = fruits[i];
+        const dx = x - fruit.x;
+        const dy = y - fruit.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        if (distance < radius + fruit.radius) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function generateRandomFruit() {
     const typeIndex = Math.floor(Math.random() * 5);
-    nextFruit = { ...fruitTypes[typeIndex], x: canvas.width / 2, y: canvas.height - 50, vx: 0, vy: 0, typeIndex, angle: 0 };
+    return { ...fruitTypes[typeIndex], typeIndex: typeIndex };
+}
+
+function prepareNextFruit() {
+    fruitToLaunch = fruitInQueue;
+    fruitInQueue = generateRandomFruit();
+
+    const radius = fruitToLaunch.radius;
+    const y = canvas.height - 50;
+    let x = canvas.width / 2;
+
+    if (isOverlapping(x, y, radius)) {
+        let searchOffset = 5; // Start searching 5px away
+        while (true) {
+            // Check right
+            let rightX = x + searchOffset;
+            if (rightX + radius < canvas.width && !isOverlapping(rightX, y, radius)) {
+                x = rightX;
+                break;
+            }
+            // Check left
+            let leftX = x - searchOffset;
+            if (leftX - radius > 0 && !isOverlapping(leftX, y, radius)) {
+                x = leftX;
+                break;
+            }
+            searchOffset += 5; // search in 5px steps
+            if (x - searchOffset < 0 && x + searchOffset > canvas.width) {
+                // No space found, just spawn in the middle and let it overlap
+                break;
+            }
+        }
+    }
+    
+    fruitToLaunch.x = x;
+    fruitToLaunch.y = y;
+    fruitToLaunch.vx = 0;
+    fruitToLaunch.vy = 0;
+    fruitToLaunch.angle = 0;
 }
 
 function gameLoop() {
@@ -153,12 +206,21 @@ function update() {
                 // Merging
                 if (f1.typeIndex === f2.typeIndex && f1.typeIndex < fruitTypes.length - 1) {
                     const newTypeIndex = f1.typeIndex + 1;
+                    const newFruitType = fruitTypes[newTypeIndex];
+
+                    // Conserve momentum for the new fruit's velocity
+                    const m1 = f1.radius;
+                    const m2 = f2.radius;
+                    const newMass = newFruitType.radius;
+                    const newVx = ((m1 * f1.vx + m2 * f2.vx) / newMass) * 0.5;
+                    const newVy = ((m1 * f1.vy + m2 * f2.vy) / newMass) * 0.5;
+
                                             const newFruit = {
-                                                ...fruitTypes[newTypeIndex],
+                                                ...newFruitType,
                                                 x: (f1.x + f2.x) / 2,
                                                 y: (f1.y + f2.y) / 2,
-                                                vx: 0,
-                                                vy: -2, // A little pop upwards
+                                                vx: newVx,
+                                                vy: newVy,
                                                 typeIndex: newTypeIndex,
                                                 angle: 0
                                             };                    fruits.splice(j, 1);
@@ -221,9 +283,9 @@ function draw() {
     });
 
     // Draw aiming line
-    if (nextFruit) {
+    if (fruitToLaunch) {
         ctx.beginPath();
-        ctx.moveTo(nextFruit.x, nextFruit.y);
+        ctx.moveTo(fruitToLaunch.x, fruitToLaunch.y);
         ctx.lineTo(mousePos.x, mousePos.y);
         ctx.strokeStyle = '#999';
         ctx.stroke();
@@ -231,31 +293,31 @@ function draw() {
     }
 
     // Draw next fruit (cue ball)
-    if (nextFruit) {
+    if (fruitToLaunch) {
         // Draw shadow
         ctx.beginPath();
-        ctx.arc(nextFruit.x + 7, nextFruit.y + 7, nextFruit.radius, 0, Math.PI * 2);
+        ctx.arc(fruitToLaunch.x + 7, fruitToLaunch.y + 7, fruitToLaunch.radius, 0, Math.PI * 2);
         ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
         ctx.fill();
         ctx.closePath();
 
         ctx.beginPath();
-        ctx.arc(nextFruit.x, nextFruit.y, nextFruit.radius, 0, Math.PI * 2);
-        ctx.fillStyle = nextFruit.color;
+        ctx.arc(fruitToLaunch.x, fruitToLaunch.y, fruitToLaunch.radius, 0, Math.PI * 2);
+        ctx.fillStyle = fruitToLaunch.color;
         ctx.fill();
         ctx.closePath();
 
         // Draw Face
         ctx.save();
-        ctx.translate(nextFruit.x, nextFruit.y);
+        ctx.translate(fruitToLaunch.x, fruitToLaunch.y);
         ctx.fillStyle = 'black';
         ctx.strokeStyle = 'black';
-        ctx.lineWidth = Math.max(1, nextFruit.radius * 0.05);
+        ctx.lineWidth = Math.max(1, fruitToLaunch.radius * 0.05);
 
         // Eyes
-        const eyeX = nextFruit.radius * 0.35;
-        const eyeY = -nextFruit.radius * 0.2;
-        const eyeRadius = nextFruit.radius * 0.1;
+        const eyeX = fruitToLaunch.radius * 0.35;
+        const eyeY = -fruitToLaunch.radius * 0.2;
+        const eyeRadius = fruitToLaunch.radius * 0.1;
         ctx.beginPath();
         ctx.arc(-eyeX, eyeY, eyeRadius, 0, 2 * Math.PI);
         ctx.fill();
@@ -264,8 +326,8 @@ function draw() {
         ctx.fill();
 
         // Mouth
-        const mouthY = nextFruit.radius * 0.1;
-        const mouthRadius = nextFruit.radius * 0.5;
+        const mouthY = fruitToLaunch.radius * 0.1;
+        const mouthRadius = fruitToLaunch.radius * 0.5;
         ctx.beginPath();
         ctx.arc(0, mouthY, mouthRadius, 0, Math.PI, false); // Smiling mouth
         ctx.stroke();
@@ -277,11 +339,11 @@ function draw() {
     const nextFruitContainer = document.getElementById('next-fruit-container');
     const nextFruitName = document.getElementById('next-fruit-name');
     nextFruitContainer.innerHTML = '';
-    if (nextFruit) {
+    if (fruitInQueue) {
         const fruitCanvas = document.createElement('canvas');
         const fruitCtx = fruitCanvas.getContext('2d');
         const dpr = window.devicePixelRatio || 1;
-        const radius = nextFruit.radius;
+        const radius = fruitInQueue.radius;
         fruitCanvas.width = radius * 2 * dpr;
         fruitCanvas.height = radius * 2 * dpr;
         fruitCanvas.style.width = radius * 2 + 'px';
@@ -291,7 +353,7 @@ function draw() {
         // Draw fruit
         fruitCtx.beginPath();
         fruitCtx.arc(radius, radius, radius, 0, Math.PI * 2);
-        fruitCtx.fillStyle = nextFruit.color;
+        fruitCtx.fillStyle = fruitInQueue.color;
         fruitCtx.fill();
         fruitCtx.closePath();
 
@@ -323,7 +385,7 @@ function draw() {
         fruitCtx.restore();
 
         nextFruitContainer.appendChild(fruitCanvas);
-        nextFruitName.textContent = nextFruit.name;
+        nextFruitName.textContent = fruitInQueue.name;
     } else {
         nextFruitName.textContent = '';
     }
